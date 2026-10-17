@@ -2476,7 +2476,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser(
         description='把 Synopsys RALF 寄存器描述文件转换成 Excel 表格',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='例:\n'
+        epilog='在 ralf2xlsx 仓库目录运行（建议 Python 3.12）：\n'
+               '  uv run ralf2xlsx --help\n'
+               '  uv run ralf2xlsx example.ralf -t soc -o regmap.xlsx\n'
+               '  uv run ralf2xlsx top.ralf --check --strict\n'
+               '\n安装后的命令也可直接使用：\n'
                '  ralf2xlsx top.ralf -t soc -o regmap.xlsx\n'
                '  ralf2xlsx a.ralf b.ralf c.ralf -o outdir/   # 批量, 各自独立转换出各自的 xlsx\n'
                '  ralf2xlsx top.ralf --check --strict     # CI 里只做检查\n'
