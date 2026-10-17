@@ -6,6 +6,10 @@ truth); this file is just the history behind each bump.
 
 ## v3.6
 
+- 2026-10-17 source environment: add `.python-version` and `uv.lock` for
+  `uv run ralf2xlsx ...` with Python 3.12; document the uniform launch command.
+  Command, interpreter and lockfile checks passed; no conversion logic changed.
+
 - Memories sheet: sort memories with no address (e.g. `@none`) after
   addressed ones under `--sort addr`, instead of first -- empty string
   sorts before any `0x...` string, which put addressless memories ahead

@@ -5,6 +5,17 @@
 把 Synopsys `ralgen` 用的 `.ralf` 文件解析、展开层次、算出绝对地址和位域，
 输出成一份可以直接发给设计/软件的 Excel 寄存器表。
 
+## 使用 uv 运行
+
+在仓库根目录执行，`.python-version` 自动选择 Python 3.12，uv 自动准备锁定依赖：
+
+```powershell
+uv run ralf2xlsx --help
+uv run ralf2xlsx example.ralf -t soc -o regmap.xlsx
+```
+
+需要提前准备环境时执行 `uv sync --locked`。
+
 ## 安装
 
 推荐通过 wheel 安装：
