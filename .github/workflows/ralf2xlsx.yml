@@ -1,0 +1,144 @@
+name: Build ralf2xlsx Wheel
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "**"
+      - "!dist/**"
+      - ".github/workflows/ralf2xlsx.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-wheel:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Read package version
+        id: pkgver
+        run: |
+          VERSION="$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "building ralf2xlsx $VERSION"
+
+      - name: Build wheel
+        env:
+          WHEEL: dist/ralf2xlsx-${{ steps.pkgver.outputs.version }}-py3-none-any.whl
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel
+          # Fail loudly if the built filename doesn't match pyproject's
+          # version, instead of silently picking up a stale wheel later via
+          # ls | sort -V | tail -1.
+          test -f "$WHEEL" || { echo "expected $WHEEL, got:"; ls dist/; exit 1; }
+          ls -lh dist/
+
+      - name: Install wheel in clean venv
+        env:
+          WHEEL: dist/ralf2xlsx-${{ steps.pkgver.outputs.version }}-py3-none-any.whl
+        run: |
+          python -m venv .venv-test
+          .venv-test/bin/python -m pip install --upgrade pip
+          echo "installing $WHEEL"
+          .venv-test/bin/python -m pip install "$WHEEL"
+
+      - name: Verify console entry point
+        run: |
+          .venv-test/bin/ralf2xlsx --help
+          rm -f example.xlsx
+          .venv-test/bin/ralf2xlsx example.ralf -t soc -o example.xlsx 2>run.log
+          test -s example.xlsx
+          grep -F "Summary:" run.log
+          grep -F "Block tree:" run.log
+          grep -F "uart[0]" run.log
+          grep -E "base=0x[0-9A-Fa-f]+, def=uart\)" run.log
+          .venv-test/bin/python - <<'PY'
+          from openpyxl import load_workbook
+          # Not read_only: ReadOnlyCell doesn't expose .hyperlink, which this
+          # check needs.
+          wb = load_workbook("example.xlsx")
+          names = set(wb.sheetnames)
+          assert "Summary" not in names
+          assert "BlockTree" not in names
+          assert "Warnings" not in names
+          assert "Registers" not in names
+          assert "Overview" in names
+          assert wb.sheetnames[0] == "Overview"
+          ovs = wb["Overview"]
+          assert ovs["A2"].hyperlink is not None
+          # RegisterMap is only emitted under --no-sheet-per-block; the default
+          # (sheet_per_block=True) covers the same rows via per-block sheets.
+          assert "RegisterMap" not in names
+          required = {"uart_0", "uart_1", "dma", "bridge"}
+          missing = required - names
+          assert not missing, "missing per-block sheets: %s" % sorted(missing)
+          assert "soc.bridge.pci" not in names and "soc.bridge.ahb" not in names
+          print("verified block sheets:", sorted(required))
+          PY
+          ls -lh example.xlsx
+
+      - name: Verify --sort addr actually reorders output
+        run: |
+          rm -f sort_addr.xlsx
+          .venv-test/bin/ralf2xlsx sort_addr_check.ralf -t top --sort addr -o sort_addr.xlsx 2>sort_addr.log
+          test -s sort_addr.xlsx
+          # sort_addr_check.ralf declares 5 blocks out of address order and
+          # of mixed content -- a/b/c have registers, d is memory-only, e is
+          # genuinely empty -- at addresses chosen so the default
+          # address-map keeps them ordered a < d < b < e < c. --sort addr
+          # must present them in that address order, not source order, in
+          # the terminal Block tree AND the workbook (Overview + per-block
+          # sheet tabs), including for d/e which have no register rows to
+          # anchor their position by.
+          python3 - <<'PY'
+          log = open("sort_addr.log", encoding="utf-8", errors="replace").read()
+          idx = [log.index("%s  (base=" % n) for n in "adbec"]
+          assert idx == sorted(idx), "Block tree not in address order: %r" % idx
+          print("verified terminal Block tree order: a, d, b, e, c")
+          PY
+          .venv-test/bin/python - <<'PY'
+          from openpyxl import load_workbook
+          wb = load_workbook("sort_addr.xlsx", read_only=True)
+          ws = wb["Overview"]
+          rows = [r[0] for r in ws.iter_rows(min_row=2, max_col=1, values_only=True) if r[0]]
+          expected = ["a", "d", "b", "e", "c"]
+          assert rows == expected, "Overview not sorted by address: %r" % rows
+          # Memories comes from d's memory row; only d/e (no registers) prove
+          # the backfill-ordering fix, the rest were already covered.
+          assert wb.sheetnames[2:] == expected, "sheet order not by address: %r" % wb.sheetnames
+          print("verified Overview/sheet order:", rows)
+          PY
+
+      - name: Commit wheel to repository
+        env:
+          WHEEL: dist/ralf2xlsx-${{ steps.pkgver.outputs.version }}-py3-none-any.whl
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f "$WHEEL"
+          if git diff --cached --quiet; then
+            echo "wheel unchanged"
+          else
+            git commit -m "build: update ralf2xlsx wheel ($WHEEL)"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ralf2xlsx-wheel
+          path: dist/ralf2xlsx-${{ steps.pkgver.outputs.version }}-py3-none-any.whl
+          retention-days: 90
