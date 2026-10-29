@@ -2144,6 +2144,22 @@ def write_xlsx(path, ela, meta, sheet_per_block=True, full_columns=False,
     # Overview is the first worksheet and acts as block navigation.
     ws_overview = wb.active
     ws_overview.title = 'Overview'
+    ws_access = wb.create_sheet('Access说明')
+    access_notes = [
+        ('rw', '可读可写；硬件内部不自行修改字段值'),
+        ('ro', '只读；写入无效；硬件内部不自行修改'),
+        ('wo', '可写；正常读取始终返回 0'),
+        ('w1', '可读；每次复位后只允许写入一次，后续写入无效'),
+        ('ru', '只读；写入无效；硬件内部可以更新'),
+        ('rc', '可读，每次读取后清零；写入无效；硬件可更新'),
+        ('w1c', '可读；按位写1清零，写0无影响；硬件可更新'),
+        ('other', '读写效果未知，或可能影响其他字段；按 rw 更新'),
+        ('dc', '按 rw 更新，但不比较实际读回值'),
+    ]
+    dump(ws_access, [dict(access=a, meaning=m) for a, m in access_notes],
+         [('access', '属性', 18), ('meaning', '手册确认的含义', 90)])
+    for row_idx in range(2, len(access_notes) + 2):
+        ws_access.row_dimensions[row_idx].height = 32
 
     if not sheet_per_block:
         # Per-block sheets already carry every register/field row split by
@@ -2247,6 +2263,10 @@ def write_xlsx(path, ela, meta, sheet_per_block=True, full_columns=False,
     ]
 
     dump(ws_overview, overview_rows, OVERVIEW_COLS)
+    ws_overview['D1'] = 'Access 属性说明'
+    ws_overview['D1'].hyperlink = Hyperlink(ref='D1', location="'Access说明'!A1")
+    ws_overview['D1'].style = 'Hyperlink'
+    ws_overview.column_dimensions['D'].width = 24
 
     # Internal hyperlink: the Block cell jumps to its block worksheet.
     for row_idx, r in enumerate(overview_rows, start=2):

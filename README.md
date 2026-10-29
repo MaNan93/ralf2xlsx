@@ -1,5 +1,7 @@
 # ralf2xlsx — RALF 寄存器描述 → Excel 表格
 
+生成的 Excel 包含 `Access说明` 工作表，列出 rw、ro、wo、w1、ru、rc、w1c、other、dc 的手册确认含义。点击 Overview 的 D1 单元格可跳转查看；这些说明不改变字段的 Access 值。
+
 版本号以 [pyproject.toml](pyproject.toml) 为唯一来源；装完之后用 `ralf2xlsx --version` 查询，本文档不单独维护一份，避免脱节。
 
 把 Synopsys `ralgen` 用的 `.ralf` 文件解析、展开层次、算出绝对地址和位域，

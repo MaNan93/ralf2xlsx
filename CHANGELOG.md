@@ -6,6 +6,11 @@ truth); this file is just the history behind each bump.
 
 ## v3.6
 
+- 2026-10-29: add an `Access说明` worksheet with the user-confirmed meanings
+  of rw, ro, wo, w1, ru, rc, w1c, other and dc. Overview D1 links to it in
+  both per-block and combined output modes. Register Access values and
+  supported access modes are unchanged. Rebuild the 3.6.0 wheel.
+
 - 2026-10-17 source environment: add `.python-version` and `uv.lock` for
   `uv run ralf2xlsx ...` with Python 3.12; document the uniform launch command.
   Command, interpreter and lockfile checks passed; no conversion logic changed.
