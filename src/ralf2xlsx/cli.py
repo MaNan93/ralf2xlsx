@@ -2157,7 +2157,7 @@ def write_xlsx(path, ela, meta, sheet_per_block=True, full_columns=False,
         ('dc', 'Updated as rw, but actual readback values are not compared.'),
     ]
     dump(ws_access, [dict(access=a, meaning=m) for a, m in access_notes],
-         [('access', 'Attribute', 18), ('meaning', 'Manual-confirmed meaning', 90)])
+         [('access', 'Attribute', 18), ('meaning', 'Description', 90)])
     for row_idx in range(2, len(access_notes) + 2):
         ws_access.row_dimensions[row_idx].height = 32
 

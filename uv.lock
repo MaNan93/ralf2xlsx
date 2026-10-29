@@ -103,7 +103,7 @@ wheels = [
 
 [[package]]
 name = "ralf2xlsx"
-version = "3.6.1"
+version = "3.6.2"
 source = { editable = "." }
 dependencies = [
     { name = "importlib-metadata", version = "4.8.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.7'" },

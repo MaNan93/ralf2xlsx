@@ -4,6 +4,10 @@ All notable changes to `ralf2xlsx` are recorded here. The release version
 itself lives in [`pyproject.toml`](pyproject.toml) (single source of
 truth); this file is just the history behind each bump.
 
+## v3.6.2
+
+- Rename the Access Reference description column to `Description`.
+
 ## v3.6.1
 
 - Translate the Access reference worksheet name, column headers, all nine
